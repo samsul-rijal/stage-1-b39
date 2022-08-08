@@ -1,0 +1,11 @@
+1. Download GIT
+2. Daftar Github
+3. Daftar Vercel
+3. Code Push ke github
+    - buat repository di akun github
+    - lakukan git init pada folder project
+    
+    - git add .
+    - git commit -m "first commit"
+    - git remote add origin link repository
+    - git push origin main
