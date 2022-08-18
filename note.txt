@@ -1,0 +1,7 @@
+- install nodejs
+- npm init -y dalam folder project 
+- npm install express
+- buat file baru dengan nama index.js
+- npm install hbs
+- set view engine
+- membuat routing

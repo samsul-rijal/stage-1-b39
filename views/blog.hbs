@@ -1,0 +1,87 @@
+<html>
+  <head>
+    <title>Creating Blog Page</title>
+    <link rel="stylesheet" href="/assets/css/blog.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" integrity="sha512-1sCRPdkRXhBV2PBLUdRb4tMg1w2YPf37qatUFeS7zlBy7jJI8Lf4VHwWfZZfpXtYSLy85pkm9GaYVYMfw5BC1A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  </head>
+  <body>
+    <!-- NavBar -->
+    <nav>
+      <div class="left-side">
+        <a href="/">
+          <img src="/assets/images/logo.png" alt="logo" />
+        </a>
+        <ul>
+          <li>
+            <a href="/">Home</a>
+          </li>
+          <li>
+            <a href="/blog" class="list-active">Blog</a>
+          </li>
+        </ul>
+      </div>
+      <div class="right-side">
+        <a href="/contact"> Contact Me </a>
+      </div>
+    </nav>
+    
+    <!-- Blog -->
+    <!-- Form -->
+    {{!-- {{#if isLogin}}
+      <h1>Selamat anda login</h1>
+    {{else}}
+      <h1>Harap login dulu</h1>
+    {{/if}} --}}
+
+    <div class="blog">
+      
+      {{#if isLogin}}
+        <div style="text-align: right; margin-right: 150px; margin-top:50px">
+          <a href="/add-blog" style="background-color: orangered; padding: 8px 20px; color:white; border-radius: 5px; text-decoration: none">Add Blog</a>
+        </div>
+      {{/if}}
+
+      <div id="contents" class="blog-list">
+        <!-- dynamic content would be here -->
+        <div class="blog-list-item">
+          <div class="blog-image">
+            <img src="/assets/images/blog-img.png" alt="" />
+          </div>
+          <div class="blog-content">
+            <div class="btn-group">
+              <button class="btn-edit">Edit Post</button>
+              <button class="btn-post">Delete Blog</button>
+            </div>
+            <h1>
+              <a href="/blog-detail/1" target="_blank"
+                >Pasar Coding di Indonesia Dinilai Masih Menjanjikan</a
+              >
+            </h1>
+            <div class="detail-blog-content">
+              12 Jul 2021 22:30 WIB | Ichsan Emrald Alamsyah
+            </div>
+
+            <p>
+              Ketimpangan sumber daya manusia (SDM) di sektor digital masih
+              menjadi isu yang belum terpecahkan. Berdasarkan penelitian
+              ManpowerGroup, ketimpangan SDM global, termasuk Indonesia,
+              meningkat dua kali lipat dalam satu dekade terakhir. Lorem ipsum,
+              dolor sit amet consectetur adipisicing elit. Quam, molestiae
+              numquam! Deleniti maiores expedita eaque deserunt quaerat! Dicta,
+              eligendi debitis?
+            </p>
+
+            <i class="fa-brands fa-twitter"></i>
+
+            <div style="text-align: right; margin-top: 15px">
+              <span style="font-size: 12px; color:grey">1 minutes ago</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="blog.js"></script>
+  </body>
+</html>
