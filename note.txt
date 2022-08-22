@@ -5,3 +5,7 @@
 - npm install hbs
 - set view engine
 - membuat routing
+
+Day 9
+- buat database dan tabel pada postgresql
+- npm i pg

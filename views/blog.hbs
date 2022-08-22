@@ -45,7 +45,7 @@
 
       <div id="contents" class="blog-list">
         <!-- dynamic content would be here -->
-        {{#each blog}}
+        {{#each dataBlog}}
           <div class="blog-list-item">
             <div class="blog-image">
               <img src="/assets/images/blog-img.png" alt="" />
@@ -63,15 +63,16 @@
                 >
               </h1>
               <div class="detail-blog-content">
-                {{this.postAt}} | {{this.author}}
+                {{this.post_at}} | {{this.author}}
               </div>
 
               <p>
                 {{this.content}}
               </p>
 
-              <i class="fa-brands fa-twitter"></i>
-
+              {{#each social_media}}
+                <i class="fa-brands fa-{{this}}"></i>
+              {{/each}}
               <div style="text-align: right; margin-top: 15px">
                 <span style="font-size: 12px; color:grey">{{this.duration}}</span>
               </div>

@@ -7,9 +7,9 @@ app.set('view engine', 'hbs') // set view engine hbs
 app.use('/assets', express.static(__dirname + '/assets')) // path folder assets
 app.use(express.urlencoded({extended: false}))
 
+const db = require('./connection/db')
 
 let isLogin = true
-let dataBlog = []
 
 app.get('/', function(request, response){
     response.render('index')
@@ -22,84 +22,57 @@ app.get('/contact', function(request, response){
 app.get('/blog', function(request, response){
     // console.log(dataBlog);
 
-    let data = dataBlog.map(function(item){
-        return {
-            ...item,
-            isLogin,
-            postAt: getFullTime(item.postAt),
-            duration: getDistanceTime(item.postAt)
-        }
+    // let data = dataBlog.map(function(item){
+    //     return {
+    //         ...item,
+    //         isLogin,
+    //         postAt: getFullTime(item.postAt),
+    //         duration: getDistanceTime(item.postAt)
+    //     }
+    // })
+    db.connect(function(err, client, done){
+        if (err) throw err // menampilkan error koneksi database
+
+        client.query('SELECT * FROM tb_blog', function(err, result){
+            if (err) throw err // menampilkan error dari query
+
+            // console.log(result.rows)
+            let data = result.rows
+
+            let dataBlog = data.map(function(item){
+                return {
+                    ...item,
+                    post_at: getFullTime(item.post_at),
+                    duration: getDistanceTime(item.post_at),
+                    isLogin,
+                }
+            })
+
+            response.render('blog', {isLogin, dataBlog})
+        })
+
     })
 
-    response.render('blog', {isLogin, blog: data})
 })
 
 app.get('/blog-detail/:index', function(request, response){
-    let index = request.params.index
-
-    let data = dataBlog[index]
-    data = {
-        title: data.title,
-        content: data.content,
-        postAt: getFullTime(data.postAt)
-    }
-
-    response.render('blog-detail', {data})
+    response.render('blog-detail')
 })
 
 app.get('/add-blog', function(request, response){
     response.render('add-blog')
 })
 
-
 app.post('/add-blog', function(request, response){
-    // console.log(request.body);
-
-    let title = request.body.inputTitle
-    let content = request.body.inputContent
-
-
-
-    let blog = {
-        title,
-        content,
-        postAt: new Date(),
-        author: "Samsul Rijal"
-    }
-
-    dataBlog.push(blog)
-
-    response.redirect('/blog')
 })
 
 app.get('/edit-blog/:index', function(request, response){
-    let index = request.params.index
-
-    let data = {
-        title: dataBlog[index].title,
-        content: dataBlog[index].content
-    }
-
-    response.render('edit-blog', {index, data})
 })
 
 app.post('/edit-blog/:index', function(request, response){
-
-    let index = request.params.index
-
-    dataBlog[index].title = request.body.inputTitle
-    dataBlog[index].content = request.body.inputContent
-
-    response.redirect('/blog')
 })
 
 app.get('/delete-blog/:index', function(request, response) {
-    // console.log(request.params);
-    let index = request.params.index
-    // console.log(index);
-    dataBlog.splice(index, 1)
-
-    response.redirect('/blog')
 })
 
 
