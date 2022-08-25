@@ -39,13 +39,18 @@ nav {
     padding-right: 100px;
 }
 
-.nav-right a {
+.nav-right .btn-contact {
     background-color: orangered;
     color: white;
     padding: 8px 25px;
     text-decoration: none;
     border-radius: 5px;
     cursor: pointer;
+}
+
+.btn-auth {
+    text-decoration: none;
+    margin: 8px;
 }
 
 .container {

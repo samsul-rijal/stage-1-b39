@@ -28,7 +28,16 @@
       </ul>
     </div>
     <div class="right-side">
-      <a href="/contact"> Contact Me </a>
+
+      {{#if isLogin}}
+        <a href="#" class="btn text-black">Hallo, {{user.name}}</a>
+        <a href="/logout" class="btn text-black mx-3">Logout</a>
+      {{else}}
+        <a href="/register" class="btn text-black">Register</a>
+        <a href="/login" class="btn text-black mx-3">Login</a>
+      {{/if}}
+
+      <a href="/contact" class="btn-contact"> Contact Me </a>
     </div>
   </nav>
 
@@ -39,6 +48,13 @@
   {{else}}
   <h1>Harap login dulu</h1>
   {{/if}} --}}
+
+  {{#if messages.success}}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      {{messages.success}}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  {{/if}}
 
   <div class="blog">
 
@@ -58,7 +74,7 @@
           <img src="/assets/images/blog-img.png" alt="" />
         </div>
         <div class="blog-content">
-          {{#if isLogin}}
+          {{#if this.isLogin}}
           <div class="btn-group">
             <a href="/edit-blog/{{this.id}}" class="btn-edit">Edit Post</a>
             <a href="/delete-blog/{{this.id}}" class="btn-post">Delete Blog</a>

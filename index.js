@@ -1,4 +1,8 @@
 const express = require('express')
+const db = require('./connection/db')
+const bcrypt = require('bcrypt')
+const session = require('express-session')
+const flash = require('express-flash')
 
 const app = express()
 const port = 8000
@@ -7,124 +11,164 @@ app.set('view engine', 'hbs') // set view engine hbs
 app.use('/assets', express.static(__dirname + '/assets')) // path folder assets
 app.use(express.urlencoded({ extended: false }))
 
-const db = require('./connection/db')
+app.use(flash())
 
-let isLogin = true
+app.use(session({
+    secret: 'bebasapaaja',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { 
+        maxAge: 2 * 60 * 60 * 1000 // 2JAM
+    }
+}))
 
 app.get('/', function (request, response) {
-    response.render('index')
+    response.render('index', {user: request.session.user, isLogin: request.session.isLogin})
 })
 
 app.get('/contact', function (request, response) {
     response.render('contact')
 })
 
-app.get('/blog', function (request, response) {
-    db.connect(function (err, client, done) {
-        if (err) throw err // menampilkan error koneksi database
 
-        client.query('SELECT * FROM tb_blog ORDER BY id DESC', function (err, result) {
-            if (err) throw err // menampilkan error dari query
+db.connect(function (err, client, done) {
+    if (err) throw err // menampilkan error koneksi database
 
-            let data = result.rows
-            console.log(result.rowCount)
+    app.get('/blog', function (request, response) {
 
-            let dataBlog = data.map(function (item) {
-                return {
-                    ...item,
-                    post_at: getFullTime(item.post_at),
-                    duration: getDistanceTime(item.post_at),
-                    isLogin,
-                }
+            console.log(request.session);
+
+            client.query('SELECT * FROM tb_blog ORDER BY id DESC', function (err, result) {
+                if (err) throw err // menampilkan error dari query
+
+                let data = result.rows
+                // console.log(result.rowCount)
+
+                let dataBlog = data.map(function (item) {
+                    return {
+                        ...item,
+                        post_at: getFullTime(item.post_at),
+                        duration: getDistanceTime(item.post_at),
+                        isLogin: request.session.isLogin,
+                    }
+                })
+
+                response.render('blog', {dataBlog, user: request.session.user, isLogin: request.session.isLogin })
+            })
+    })
+
+    app.get('/blog-detail/:idParams', function (request, response) {
+        if(!request.session.user){
+            request.flash('danger', 'Silahkan login!')
+            return response.redirect('/login')
+        }
+
+
+        let id = request.params.idParams
+
+        db.connect(function (err, client, done) {
+            if (err) throw err // menampilkan error koneksi database
+
+            let query = `SELECT * FROM tb_blog WHERE id=${id}`
+
+            client.query(query, function (err, result) {
+                if (err) throw err // menampilkan error dari query
+
+                console.log(result.rows[0].post_at);
+                let data = result.rows
+                let dataBlog = data.map(function (item) {
+                    return {
+                        ...item,
+                        post_at: getFullTime(item.post_at),
+                        isLogin,
+                    }
+                })
+
+                response.render('blog-detail', { data: dataBlog[0] })
             })
 
-            response.render('blog', { isLogin, dataBlog })
+        })
+    })
+
+    app.get('/add-blog', function (request, response) {
+        if(!request.session.user){
+            request.flash('danger', 'Silahkan login!')
+            return response.redirect('/login')
+        }
+
+        response.render('add-blog')
+    })
+
+    app.post('/add-blog', function (request, response) {
+
+        let { inputTitle: title, inputContent: content } = request.body
+
+        db.connect(function (err, client, done) {
+            if (err) throw err // menampilkan error koneksi database
+
+            let query = `INSERT INTO tb_blog (title, content, image) VALUES
+                            ('${title}','${content}','image.jpg')`
+
+            client.query(query, function (err, result) {
+                if (err) throw err // menampilkan error dari query
+
+                response.redirect('/blog')
+            })
+
         })
 
     })
 
-})
-
-app.get('/blog-detail/:idParams', function (request, response) {
-    let id = request.params.idParams
-
-    db.connect(function (err, client, done) {
-        if (err) throw err // menampilkan error koneksi database
+    app.get('/edit-blog/:idParams', function (request, response) {
+        if(!request.session.user){
+            request.flash('danger', 'Silahkan login!')
+            return response.redirect('/login')
+        }
+        
+        let id = request.params.idParams
 
         let query = `SELECT * FROM tb_blog WHERE id=${id}`
 
         client.query(query, function (err, result) {
             if (err) throw err // menampilkan error dari query
 
-            console.log(result.rows[0].post_at);
-            let data = result.rows
-            let dataBlog = data.map(function (item) {
-                return {
-                    ...item,
-                    post_at: getFullTime(item.post_at),
-                    isLogin,
-                }
-            })
+            let data = result.rows[0]
+            
 
-            response.render('blog-detail', { data: dataBlog[0] })
+            response.render('edit-blog', { data })
         })
 
     })
-})
 
-app.get('/add-blog', function (request, response) {
-    response.render('add-blog')
-})
+    app.post('/edit-blog/:idParams', function (request, response) {
+        let id = request.params.idParams
 
-app.post('/add-blog', function (request, response) {
+        let {inputTitle, inputContent} = request.body
 
-    let { inputTitle: title, inputContent: content } = request.body
-
-    db.connect(function (err, client, done) {
-        if (err) throw err // menampilkan error koneksi database
-
-        let query = `INSERT INTO tb_blog (title, content, image) VALUES
-                        ('${title}','${content}','image.jpg')`
+        // code update
+        let query = `UPDATE tb_blog
+        SET title='${inputTitle}', content='${inputContent}'
+        WHERE id=${id}`
 
         client.query(query, function (err, result) {
-            if (err) throw err // menampilkan error dari query
+            if (err) throw err // menampilkan error dari query            
 
             response.redirect('/blog')
         })
 
     })
 
-})
+    app.get('/delete-blog/:idParams', function (request, response) {
 
-app.get('/edit-blog/:idParams', function (request, response) {
-    let id = request.params.idParams
+        if(!request.session.user){
+            request.flash('danger', 'Silahkan login!')
+            return response.redirect('/login')
+        }
 
-    db.connect(function (err, client, done) {
-        if (err) throw err // menampilkan error koneksi database
-
-        let query = `SELECT * FROM tb_blog WHERE id=${id}`
-
-        client.query(query, function (err, result) {
-            if (err) throw err // menampilkan error dari query
-
-            let data = result.rows
-
-            response.render('edit-blog', { data: data[0] })
-        })
-
-    })
-})
-
-app.post('/edit-blog/:idParams', function (request, response) {
-    let id = request.params.idParams
-
-    // code update
-})
-
-app.get('/delete-blog/:idParams', function (request, response) {
-    let id = request.params.idParams
-
-    db.connect(function (err, client, done) {
+        
+        let id = request.params.idParams
+        console.log(id);
+        return
         if (err) throw err // menampilkan error koneksi database
 
         let query = `DELETE FROM tb_blog WHERE id=${id}`
@@ -134,9 +178,79 @@ app.get('/delete-blog/:idParams', function (request, response) {
 
             response.redirect('/blog')
         })
-
     })
 
+    app.get('/register', function (request, response) {
+        response.render('register')
+    })
+
+    app.post('/register', function (request, response) {
+
+        console.log(request.body);
+        let { inputName, inputEmail, inputPassword } = request.body
+
+        const hashedPassword = bcrypt.hashSync(inputPassword, 25)
+
+        let query = `INSERT INTO public.tb_user(name, email, password)
+	    VALUES ('${inputName}', '${inputEmail}', '${hashedPassword}');`
+
+        client.query(query, function (err, result) {
+        if (err) throw err // menampilkan error dari query
+
+        response.redirect('/register')
+        })
+    })
+
+    app.get('/login', function (request, response) {
+        response.render('login')
+    })
+    
+    app.post('/login', function (request, response) {
+
+        let { inputEmail, inputPassword } = request.body
+
+        let query = `SELECT * FROM tb_user WHERE email='${inputEmail}'`
+
+        client.query(query, function (err, result) {
+            if (err) throw err // menampilkan error dari query
+
+            // console.log(result.rows.length);
+            console.log(result.rows[0]);
+            if(result.rows.length == 0){
+                console.log('Email belum terdaftar')
+                request.flash('danger', 'Email belum terdaftar')
+                return response.redirect('/login')
+            }
+
+            const isMatch = bcrypt.compareSync(inputPassword, result.rows[0].password)
+            console.log(isMatch);
+
+            if(isMatch){
+                console.log('Login berhasil');
+
+                request.session.isLogin = true
+                request.session.user = {
+                    id: result.rows[0].id,
+                    name: result.rows[0].name,
+                    email: result.rows[0].email,
+                }
+                request.flash('success', 'Login berhasil')
+                response.redirect('/blog')
+                
+            } else {
+                console.log('Password salah');
+                request.flash('danger', 'Password salah')
+                response.redirect('/login')
+            }
+
+        })        
+    })
+
+    app.get('/logout', function (request, response) {
+        request.session.destroy()
+        
+        response.redirect('/login')
+    })
 })
 
 
