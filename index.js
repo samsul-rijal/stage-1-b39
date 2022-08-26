@@ -197,7 +197,7 @@ db.connect(function (err, client, done) {
         client.query(query, function (err, result) {
         if (err) throw err // menampilkan error dari query
 
-        response.redirect('/register')
+        response.redirect('/blog')
         })
     })
 
