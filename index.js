@@ -1,14 +1,17 @@
 const express = require('express')
-const db = require('./connection/db')
 const bcrypt = require('bcrypt')
 const session = require('express-session')
 const flash = require('express-flash')
+
+const db = require('./connection/db')
+const upload = require('./middleware/fileUpload')
 
 const app = express()
 const port = 8000
 
 app.set('view engine', 'hbs') // set view engine hbs
 app.use('/assets', express.static(__dirname + '/assets')) // path folder assets
+app.use('/uploads', express.static(__dirname + '/uploads')) // path folder assets
 app.use(express.urlencoded({ extended: false }))
 
 app.use(flash())
@@ -38,7 +41,24 @@ db.connect(function (err, client, done) {
 
             console.log(request.session);
 
-            client.query('SELECT * FROM tb_blog ORDER BY id DESC', function (err, result) {
+            // let author_id = request.session.user ? request.session.user.id : ''
+
+            // const queryFilter = `SELECT tb_blog.id, tb_blog.title, 
+            // tb_blog.content, tb_blog.image, tb_blog.author_id, 
+            // tb_user.name as author, post_at, start_date FROM tb_blog 
+            // LEFT JOIN tb_user ON tb_blog.author_id = tb_user.id 
+            // WHERE author_id=${author_id}
+            // ORDER BY post_at DESC`
+
+            const query = `SELECT tb_blog.id, tb_blog.title, 
+            tb_blog.content, tb_blog.image, tb_blog.author_id, 
+            tb_user.name as author, post_at, start_date FROM tb_blog 
+            LEFT JOIN tb_user ON tb_blog.author_id = tb_user.id 
+            ORDER BY post_at DESC`
+
+            // const filterData = request.session.user ? queryFilter : query
+
+            client.query(query, function (err, result) {
                 if (err) throw err // menampilkan error dari query
 
                 let data = result.rows
@@ -53,7 +73,18 @@ db.connect(function (err, client, done) {
                     }
                 })
 
-                response.render('blog', {dataBlog, user: request.session.user, isLogin: request.session.isLogin })
+                console.log(dataBlog);
+                let filterBlog
+                if(request.session.user){
+                    filterBlog = dataBlog.filter(function(item){
+                        return item.author_id === request.session.user.id
+                    })
+                    console.log(filterBlog);
+                }
+
+                let resultBlog = request.session.user ? filterBlog : dataBlog
+
+                response.render('blog', {dataBlog: resultBlog, user: request.session.user, isLogin: request.session.isLogin })
             })
     })
 
@@ -99,15 +130,20 @@ db.connect(function (err, client, done) {
         response.render('add-blog')
     })
 
-    app.post('/add-blog', function (request, response) {
+    app.post('/add-blog', upload.single('inputImage'), function (request, response) {
 
         let { inputTitle: title, inputContent: content } = request.body
+        
+        // console.log(request.file.filename);
+        const image = request.file.filename
 
         db.connect(function (err, client, done) {
             if (err) throw err // menampilkan error koneksi database
 
-            let query = `INSERT INTO tb_blog (title, content, image) VALUES
-                            ('${title}','${content}','image.jpg')`
+            const userId = request.session.user.id
+
+            let query = `INSERT INTO tb_blog (title, content, image, author_id) VALUES
+                            ('${title}','${content}','${image}', ${userId})`
 
             client.query(query, function (err, result) {
                 if (err) throw err // menampilkan error dari query
@@ -126,6 +162,8 @@ db.connect(function (err, client, done) {
         }
         
         let id = request.params.idParams
+        const date = new Date().toISOString().split('T')[0]
+        console.log(date);
 
         let query = `SELECT * FROM tb_blog WHERE id=${id}`
 
@@ -135,7 +173,7 @@ db.connect(function (err, client, done) {
             let data = result.rows[0]
             
 
-            response.render('edit-blog', { data })
+            response.render('edit-blog', { data, date })
         })
 
     })
@@ -253,7 +291,6 @@ db.connect(function (err, client, done) {
     })
 })
 
-
 function getFullTime(time) {
 
     let month = ["Januari", "Febuari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "Nopember", "Desember"]
@@ -272,8 +309,9 @@ function getFullTime(time) {
     }
 
     // 12 Agustus 2022 09.04
-    let fullTime = `${date} ${month[monthIndex]} ${year} ${hours}:${minutes} WIB`
+    let fullTime = `${date}${month[monthIndex]} ${year} ${hours}:${minutes} WIB`
     // console.log(fullTime);
+
     return fullTime
 }
 
@@ -304,6 +342,7 @@ function getDistanceTime(time) {
         return `${distanceSeconds} seconds ago`
     }
 }
+
 
 app.listen(port, function () {
     console.log(`server running on port ${port}`);
